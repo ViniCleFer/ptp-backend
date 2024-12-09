@@ -35,4 +35,9 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   profile?: UserNivel;
+
+  @ApiProperty({ description: 'ID do usuário que está criando o usuário' })
+  @IsString()
+  @IsNotEmpty()
+  userId: string;
 }

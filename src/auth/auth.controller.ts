@@ -42,11 +42,8 @@ export class AuthController {
   @Public()
   @Post('sign-up')
   @HttpCode(HttpStatus.CREATED)
-  signUp(
-    @Body() createSignUpDto: AuthSignUpDto,
-    @Headers('userId') userId: string,
-  ) {
-    return this.authService.signUp(createSignUpDto, userId);
+  signUp(@Body() createSignUpDto: AuthSignUpDto) {
+    return this.authService.signUp(createSignUpDto);
   }
 
   @Public()

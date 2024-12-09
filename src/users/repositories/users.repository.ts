@@ -27,6 +27,22 @@ export class UsersRepository {
 
   async create(createUserDto: CreateUserDto): Promise<Partial<UserEntity>> {
     try {
+      const ownerUser = await this.prisma.user.findUnique({
+        where: { id: createUserDto.userId },
+      });
+
+      if (!ownerUser) {
+        throw new BadRequestException('Usuário não existe');
+      }
+
+      const userExists = await this.prisma.user.findUnique({
+        where: { email: createUserDto.email },
+      });
+
+      if (userExists) {
+        throw new BadRequestException('Usuário já existe');
+      }
+
       const passwordEnv = this.config.get<string>('PASSWORD_SECRET');
       const hash = await hashData(passwordEnv);
 

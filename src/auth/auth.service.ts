@@ -16,8 +16,8 @@ export class AuthService {
     return this.repository.signIn(createSignInDto);
   }
 
-  signUp(createSignUpDto: AuthSignUpDto, userId: string) {
-    return this.repository.signUp(createSignUpDto, userId);
+  signUp(createSignUpDto: AuthSignUpDto) {
+    return this.repository.signUp(createSignUpDto);
   }
 
   signInWithCode(codeDto: AuthCodeDto, email: string) {

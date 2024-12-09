@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { Prisma, User } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -126,18 +126,14 @@ export class AuthRepository {
     }
   }
 
-  async signUp(
-    createSignUpDto: AuthSignUpDto,
-    userId: string,
-  ): Promise<UserEntity> {
-    console.log({ createSignUpDto });
-    // const ownerUser = await this.prisma.user.findUnique({
-    //   where: { id: userId },
-    // });
+  async signUp(createSignUpDto: AuthSignUpDto): Promise<UserEntity> {
+    const ownerUser = await this.prisma.user.findUnique({
+      where: { id: createSignUpDto.userId },
+    });
 
-    // if (!ownerUser) {
-    //   throw new BadRequestException('Usuário não existe');
-    // }
+    if (!ownerUser) {
+      throw new BadRequestException('Usuário não existe');
+    }
 
     const userExists = await this.prisma.user.findUnique({
       where: { email: createSignUpDto.email },
@@ -153,7 +149,6 @@ export class AuthRepository {
 
     const data: Prisma.UserCreateInput = {
       ...createSignUpDto,
-      status: 'US3',
       password: hash,
     };
 
