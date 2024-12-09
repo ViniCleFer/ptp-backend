@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  US1 // ACTIVE
+  US2 // INACTIVE
+  US3 // PENDING
+}
+
+enum UserNivel {
+  UN1 // ADMIN
+  UN2 // MEMBRO
+}
+
+model FormPtp {
+  id String @id @default(uuid())
+
+  dataExecucao DateTime
+  conferente   String
+  notaFiscal   String
+  opcaoUp      String
+
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  canceled_at DateTime?
+
+  logs Log[]
+
+  forms_ptp_questions FormPtpQuestion[]
+  laudos_crm          LaudoCrm[]
+
+  @@map("forms_ptp")
+}
+
+enum Enunciado {
+  NUM_CAMADAS
+  LIMPEZA
+  PRESENCA_DATA_FABRICACAO
+  INTEGRIDADE_PALLET
+  AUSENCIA_VAZAMENTO
+  STRECH_FORRACAO
+  ETIQUETA_UC
+}
+
+model FormPtpQuestion {
+  id String @id @default(uuid())
+
+  form_ptp    FormPtp @relation(fields: [form_ptp_id], references: [id])
+  form_ptp_id String
+
+  enunciado              Enunciado
+  qtdAnalisada           String
+  codProduto             String
+  naoConformidade        Boolean   @default(false)
+  detalheNaoConformidade String
+  qtdPalletsNaoConforme  String
+  qtdCaixasNaoConforme   String
+  necessitaCrm           Boolean   @default(false)
+
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  canceled_at DateTime?
+
+  logs Log[]
+
+  @@unique([form_ptp_id, enunciado])
+  @@map("forms_ptp_questions")
+}
+
+enum Turno {
+  T1
+  T2
+  T3
+}
+
+enum TipoNaoConformidade {
+  PALLET_COM_AVARIA
+  PALLET_COM_DIVERGENCIA_DE_LOTE
+  PALLET_COM_FALTA
+  PALLET_COM_STRECH_RASGADO
+  PALLET_COM_SUJIDADE
+  PALLET_DESALINHADO
+  PALLET_QUEBRADO
+}
+
+model LaudoCrm {
+  id String @id @default(uuid())
+
+  form_ptp    FormPtp @relation(fields: [form_ptp_id], references: [id])
+  form_ptp_id String
+
+  evidencias File[]
+
+  documentoTransporte  String
+  transportador        String
+  placa                String
+  notaFiscal           String
+  dataIdentificacao    DateTime
+  conferente           String
+  turno                Turno
+  origem               String
+  tiposNaoConformidade TipoNaoConformidade[] // detalheNaoConformidade do PTP
+
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  canceled_at DateTime?
+
+  logs Log[]
+
+  @@map("laudos_crm")
+}
+
+enum TipoDivergencia {
+  FALTA
+  SOBRA
+  INVERSAO
+}
+
+model Divergencia {
+  id String @id @default(uuid())
+
+  tipoDivergencia TipoDivergencia
+  evidencias      File[]
+
+  skuFaltandoFisicamente  String?
+  qtdFaltandoFisicamente  String?
+  skuSobrandoFisicamente  String?
+  qtdSobrandoFisicamente  String?
+  skuRecebemosFisicamente String?
+  qtdRecebemosFisicamente String?
+  skuNotaFiscal           String?
+  qtdNotaFiscal           String?
+  proximoPasso            String
+
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  canceled_at DateTime?
+
+  logs Log[]
+
+  @@map("divergencias")
+}
+
+model User {
+  id                 String  @id @default(uuid())
+  name               String  @default("")
+  email              String  @unique
+  phone              String?
+  password           String
+  hashedRefreshToken String?
+
+  status  UserStatus @default(US1)
+  profile UserNivel  @default(UN2)
+
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  canceled_at DateTime?
+
+  resetPassword ResetPassword[]
+  logs          Log[]
+  codes         Codes[]
+  evidencias    File[]
+
+  @@map("users")
+}
+
+model ResetPassword {
+  id String @id @default(uuid())
+
+  user    User   @relation(fields: [user_id], references: [id])
+  user_id String
+
+  refresh_token String   @unique
+  expires_date  DateTime
+
+  @@map("reset_password")
+}
+
+model File {
+  id String @id @default(uuid())
+
+  url      String
+  filename String
+  mimetype String
+  size     Int
+
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  canceled_at DateTime?
+
+  user    User   @relation(fields: [user_id], references: [id])
+  user_id String
+
+  laudoCrm   LaudoCrm? @relation(fields: [laudoCrmId], references: [id])
+  laudoCrmId String?
+
+  divergencia   Divergencia? @relation(fields: [divergenciaId], references: [id])
+  divergenciaId String?
+
+  @@map("files")
+}
+
+model Log {
+  id          String  @id @default(uuid())
+  name        String
+  local       String
+  action      String
+  description String
+  id_entity   String?
+  old_value   String?
+  new_value   String?
+  ip          String
+
+  user    User   @relation(fields: [user_id], references: [id])
+  user_id String
+
+  created_at DateTime @default(now())
+
+  formPtp   FormPtp? @relation(fields: [formPtpId], references: [id])
+  formPtpId String?
+
+  formPtpQuestion   FormPtpQuestion? @relation(fields: [formPtpQuestionId], references: [id])
+  formPtpQuestionId String?
+
+  laudoCrm   LaudoCrm? @relation(fields: [laudoCrmId], references: [id])
+  laudoCrmId String?
+
+  divergencia   Divergencia? @relation(fields: [divergenciaId], references: [id])
+  divergenciaId String?
+
+  @@map("logs")
+}
+
+model Codes {
+  id String @id @default(uuid())
+
+  user    User   @relation(fields: [user_id], references: [id])
+  user_id String
+
+  email String
+
+  code String @unique
+
+  created_at DateTime @default(now())
+
+  @@map("codes")
+}
